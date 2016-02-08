@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from sklearn.cross_validation import train_test_split
+from math import log
+from sklearn import metrics
 
 __author__ = 'ashanbhag3'
 
@@ -45,20 +46,32 @@ class NaiveBayesClassifier(object):
         del x_df_0, x_df_1
         self.sum_word_counts = self.word_counts.sum(axis=0)
 
-    def predict(self, x_df):
+    def predict(self, x_df, y_truth):
         pred = []
 
         # For every row
-        for idx, row in x_df.iterrows():
+        for _, row in x_df.iterrows():
             row = row.tolist()
             pr = np.zeros((self.n_classes,))
             # for every class
             for c in range(self.n_classes):
-                pr[c] = self.class_pr[c]
+                pr[c] = log(self.class_pr[c])
                 # for every word in row
-                for w in row:
+                for idx, w in enumerate(row):
                     if int(w) > 0:
-                    
+                        map = (self.word_counts[idx, c] + self.alpha) / float(
+                                self.sum_word_counts[c] + self.n_classes * self.alpha)
+                        pr[c] = pr[c] + log(map)
+
+            # Compare and give decision
+            if pr[0] >= pr[1]:
+                pred.append("0")
+            else:
+                pred.append("1")
+
+        print metrics.accuracy_score(y_truth, pred)
+        save_list_readable(pred, '../results/pred.csv')
+
 
 if __name__ == '__main__':
     # Data preprossing
@@ -69,4 +82,4 @@ if __name__ == '__main__':
 
     nb_mle = NaiveBayesClassifier(alpha=1.0)
     nb_mle.fit(x_train, y_train)
-    nb_mle.predict(x_test)
+    nb_mle.predict(x_test, y_test)
